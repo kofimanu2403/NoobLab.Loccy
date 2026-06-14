@@ -22,13 +22,19 @@
             <version>1.1.2</version>
         </dependency> -->
         
-      <!-- JSTL 1.2 (includes impl) - needed at runtime for JSPs (login.jsp, run*.jsp, etc.).
-           We accept some duplicate class scanning warnings under jetty:run; they are harmless.
-           The full artifact ensures the WAR is self-contained for traditional containers and Jetty. -->
+      <!-- JSTL for JSP taglibs (login.jsp, run*.jsp, etc.). Split spec+impl avoids the
+           monolithic jstl-1.2.jar duplicate with Jetty's apache-jstl during jetty:run. -->
       <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>jstl</artifactId>
-        <version>1.2</version>
+        <groupId>org.apache.taglibs</groupId>
+        <artifactId>taglibs-standard-spec</artifactId>
+        <version>1.2.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.taglibs</groupId>
+        <artifactId>taglibs-standard-impl</artifactId>
+        <version>1.2.5</version>
+        <!-- Provided at dev time by jetty-maven-plugin's apache-jstl; copied into the WAR at package. -->
+        <scope>provided</scope>
       </dependency>
 
        <dependency>
@@ -144,9 +150,9 @@
                          The build is successful; these are not failures. -->
                     <showDeprecation>false</showDeprecation>
                     <showWarnings>false</showWarnings>
+                    <fork>true</fork>
                     <compilerArgs>
-                        <arg>-Xlint:-deprecation</arg>
-                        <arg>-Xlint:-unchecked</arg>
+                        <arg>-Xlint:none</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
@@ -173,12 +179,30 @@
                         </systemProperty>
                     </systemProperties>
                 </configuration>
-                <!-- Add JSP + JSTL support to the plugin's classpath. This helps on-the-fly
-                     JSP compilation (Jasper) under `mvn jetty:run` and reduces "ClassNotFound for ..._jsp"
-                     errors for pages like login.jsp and runpython.jsp. -->
-                <!-- No extra plugin-level JSP deps here to keep jetty:run phase simple and avoid any resolution surprises.
-                     The jstl 1.2 in the main dependencies + dirAllowed=false + servlet mapping for / should be sufficient.
-                     If JSP compilation issues appear under jetty:run in your env, a full Tomcat deployment of the WAR is the robust path (original design). -->
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.7.0</version>
+                <executions>
+                    <execution>
+                        <id>stage-jstl-impl-for-war</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.taglibs</groupId>
+                                    <artifactId>taglibs-standard-impl</artifactId>
+                                    <version>1.2.5</version>
+                                    <outputDirectory>${project.build.directory}/war-lib</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -186,6 +210,15 @@
                 <version>3.4.0</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <webResources>
+                        <resource>
+                            <directory>${project.build.directory}/war-lib</directory>
+                            <targetPath>WEB-INF/lib</targetPath>
+                            <includes>
+                                <include>*.jar</include>
+                            </includes>
+                        </resource>
+                    </webResources>
                 </configuration>
             </plugin>
             <plugin>

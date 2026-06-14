@@ -614,10 +614,17 @@ public class Main extends HttpServlet
         }
         else
         {
-            request.getSession().setAttribute("username",null);
-            request.getSession().setAttribute("error","No contents specified");
-            RequestDispatcher rd = request.getRequestDispatcher("/login.jsp");
-            rd.forward(request, response);
+            // Logged in but no lesson URL — stay signed in and show a simple landing page.
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().println(
+                "<!DOCTYPE html><html><head><title>NoobLab</title>"
+                + "<link rel=\"stylesheet\" href=\"" + request.getContextPath() + "/nooblab.css\">"
+                + "</head><body><div id=\"content\" style=\"width:100%\"><div class=\"loginBoxBigger\">"
+                + "<h3>NoobLab</h3>"
+                + "<p>Signed in as <strong>" + username + "</strong>.</p>"
+                + "<p>Load a lesson with <code>?contentsrc=hostname/path/to/content.html</code>, "
+                + "or use the run endpoints directly (for example <code>/RunPython</code>).</p>"
+                + "</div></div></body></html>");
             return;
         }
         
