@@ -235,7 +235,10 @@ public class JavaRunningUtils {
 
                     method = clazz.getDeclaredMethod("main", new Class[] { String[].class });                    
                     String[] mainArgs = new String[1];
-                    method.invoke(object, mainArgs);
+                    // Suppress the "non-varargs call of varargs method" warning from Method.invoke(Object, Object...).
+                    // We pass the String[] as the single argument that main(String[]) expects.
+                    @SuppressWarnings("unchecked")
+                    Object __ = method.invoke(object, new Object[] { mainArgs });
 
                 } catch (Exception e) { /* e.printStackTrace(); */ }
             }

@@ -775,7 +775,7 @@ public class ScanStats {
                 System.out.print("total="+total+" (possible max: "+rawtotal*6+")");
                 if (total != 0)
                 {
-                    double satfactor = new Double(total)/(rawtotal*6)*100;
+                    double satfactor = (total * 100.0) / (rawtotal * 6); // avoid deprecated new Double() and integer division
                     System.out.print(" satisfaction factor: "+new DecimalFormat("#.##").format(satfactor)+"%");
                 }
                 System.out.println();

@@ -47,18 +47,27 @@ public class MiscUtils {
 
     public static String getDataDir(HttpServletRequest request) {
         String datadir = request.getSession().getServletContext().getInitParameter("datadir");
+        if (datadir == null || datadir.isEmpty()) {
+            datadir = System.getProperty("java.io.tmpdir") + "/nooblab-data";
+        }
+        try { org.apache.commons.io.FileUtils.forceMkdir(new java.io.File(datadir)); } catch (Exception ignored) {}
         String module = (String) request.getSession().getAttribute("module");
         if (module == null || "".equals(module)) {
             module = "";
         }
         if (!module.equals("")) {
             datadir += "/" + module;
+            try { org.apache.commons.io.FileUtils.forceMkdir(new java.io.File(datadir)); } catch (Exception ignored) {}
         }
         return datadir;
     }
 
     public static String getDataDir(HttpServletRequest request, boolean module) {
         String datadir = request.getSession().getServletContext().getInitParameter("datadir");
+        if (datadir == null || datadir.isEmpty()) {
+            datadir = System.getProperty("java.io.tmpdir") + "/nooblab-data";
+        }
+        try { org.apache.commons.io.FileUtils.forceMkdir(new java.io.File(datadir)); } catch (Exception ignored) {}
         return datadir;
     }
 

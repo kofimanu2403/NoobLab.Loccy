@@ -198,7 +198,10 @@ public class Main extends HttpServlet
             }
             catch (Exception e)
             {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "No content specified in NoobLab URL.");
+                // Always land bare root or missing-content requests on the login page for a good first-time GUI experience.
+                // (Real lessons come from external content via ?contentsrc=... or mapped paths.)
+                String loginTarget = request.getContextPath() + "/login.jsp";
+                response.sendRedirect(loginTarget);
                 return;
             }
             

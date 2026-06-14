@@ -22,6 +22,9 @@
             <version>1.1.2</version>
         </dependency> -->
         
+      <!-- JSTL 1.2 (includes impl) - needed at runtime for JSPs (login.jsp, run*.jsp, etc.).
+           We accept some duplicate class scanning warnings under jetty:run; they are harmless.
+           The full artifact ensures the WAR is self-contained for traditional containers and Jetty. -->
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>jstl</artifactId>
@@ -132,17 +135,55 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.0.2</version>
+                <version>3.11.0</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <!-- Use release for modern JDKs targeting older bytecode; helps with bootstrap warnings -->
+                    <release>8</release>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <!-- Suppress noisy deprecation/unchecked warnings from legacy code (original project used very old Java/ libs).
+                         The build is successful; these are not failures. -->
+                    <showDeprecation>false</showDeprecation>
+                    <showWarnings>false</showWarnings>
+                    <compilerArgs>
+                        <arg>-Xlint:-deprecation</arg>
+                        <arg>-Xlint:-unchecked</arg>
+                    </compilerArgs>
                 </configuration>
+            </plugin>
+            <!-- Easy local run: mvn jetty:run -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>9.4.53.v20231009</version>
+                <configuration>
+                    <webAppSourceDirectory>${project.basedir}/src/main/webapp</webAppSourceDirectory>
+                    <scanIntervalSeconds>0</scanIntervalSeconds>
+                    <httpConnector>
+                        <port>8080</port>
+                        <host>0.0.0.0</host>
+                    </httpConnector>
+                    <webApp>
+                        <contextPath>/</contextPath>
+                    </webApp>
+                    <!-- Disable directory listings for a cleaner "app" experience at root -->
+                    <systemProperties>
+                        <systemProperty>
+                            <name>org.eclipse.jetty.servlet.Default.dirAllowed</name>
+                            <value>false</value>
+                        </systemProperty>
+                    </systemProperties>
+                </configuration>
+                <!-- Add JSP + JSTL support to the plugin's classpath. This helps on-the-fly
+                     JSP compilation (Jasper) under `mvn jetty:run` and reduces "ClassNotFound for ..._jsp"
+                     errors for pages like login.jsp and runpython.jsp. -->
+                <!-- No extra plugin-level JSP deps here to keep jetty:run phase simple and avoid any resolution surprises.
+                     The jstl 1.2 in the main dependencies + dirAllowed=false + servlet mapping for / should be sufficient.
+                     If JSP compilation issues appear under jetty:run in your env, a full Tomcat deployment of the WAR is the robust path (original design). -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.1.1</version>
+                <version>3.4.0</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                 </configuration>
@@ -150,7 +191,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.4.3</version>
+                <version>3.3.1</version>
                 <configuration>
                     <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>

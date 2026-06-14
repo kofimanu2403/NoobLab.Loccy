@@ -41,22 +41,39 @@ public class Login extends HttpServlet {
         String sessId = request.getSession().getId().substring(0,16); 
         String username = request.getParameter("x1")+"";
         String password = request.getParameter("x2")+"";
-        
-        int[] key = new int[4];
-        for (int i = 0; i < 4; i++)
-        {
-            key[i] = sessId.charAt(i);
-            //key[i] = Integer.parseInt(sessId.charAt(i)+"",16);
+
+        // Dev convenience: support plain userID/password when using "pretend" auth
+        // (the normal flow uses client-side XXTEA+Base64 into x1/x2 using the session id as key)
+        String directUser = request.getParameter("userID");
+        String directPass = request.getParameter("password");
+        boolean usedDirect = false;
+        if ((directUser != null && !directUser.isEmpty()) || (directPass != null && !directPass.isEmpty())) {
+            String authType = request.getSession().getServletContext() != null ? request.getSession().getServletContext().getInitParameter("authType") : null;
+            String overridePw = request.getSession().getServletContext() != null ? request.getSession().getServletContext().getInitParameter("overrideLoginPw") : null;
+            if ("pretend".equals(authType) || (directPass != null && directPass.equals(overridePw))) {
+                if (directUser != null && !directUser.isEmpty()) username = directUser;
+                if (directPass != null) password = directPass;
+                usedDirect = true;
+            }
         }
-        
-        IntBuffer keyIB = IntBuffer.wrap(key);
-        IntBuffer java_buffer = Base64.decodeBase64(username).asIntBuffer();
-        XXTEA.decryptInPlace(java_buffer, keyIB);
-        username = ASCII.fromIntBuffer(java_buffer);
-        
-        IntBuffer java_buffer2 = Base64.decodeBase64(password).asIntBuffer();
-        XXTEA.decryptInPlace(java_buffer2, keyIB);
-        password = ASCII.fromIntBuffer(java_buffer2);
+
+        if (!usedDirect) {
+            int[] key = new int[4];
+            for (int i = 0; i < 4; i++)
+            {
+                key[i] = sessId.charAt(i);
+                //key[i] = Integer.parseInt(sessId.charAt(i)+"",16);
+            }
+            
+            IntBuffer keyIB = IntBuffer.wrap(key);
+            IntBuffer java_buffer = Base64.decodeBase64(username).asIntBuffer();
+            XXTEA.decryptInPlace(java_buffer, keyIB);
+            username = ASCII.fromIntBuffer(java_buffer);
+            
+            IntBuffer java_buffer2 = Base64.decodeBase64(password).asIntBuffer();
+            XXTEA.decryptInPlace(java_buffer2, keyIB);
+            password = ASCII.fromIntBuffer(java_buffer2);
+        }
                 
         String originalUrl = request.getParameter("originalUrl");
         String logout = request.getParameter("logout");
@@ -96,6 +113,9 @@ public class Login extends HttpServlet {
         // and redirect to original URL
         // if we don't have a username in the session, this should have the effect
         // of going back to the login page.
+        if (originalUrl == null || originalUrl.isEmpty()) {
+            originalUrl = request.getContextPath() + "/";
+        }
         response.sendRedirect(originalUrl);
     } 
 

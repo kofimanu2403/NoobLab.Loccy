@@ -1,2 +1,13 @@
-src/main/webapp/doppio/vendor/*
+# Large extracted assets for legacy+new doppio (re-provisioned by start.sh as needed)
+src/main/webapp/doppio/vendor/java_home/
+src/main/webapp/doppio/vendor/classes/
+src/main/webapp/doppio/vendor/mini-rt.tar
+# keep small support libs and gitkeep (so the dir exists on clone)
 /target/
+
+# Build logs / error captures (as requested to diagnose "build failure" noise without committing them)
+build-errors.log
+build.log
+mvn*.log
+*.log
+!.gitkeep
